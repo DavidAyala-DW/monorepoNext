@@ -1,9 +1,14 @@
 import Head from 'next/head'
+import groq from 'groq'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
+import client from '@/lib/sanity-client'
+import { getSlugVariations, slugParamToPath } from '@/lib/urls'
 
-export default function Home() {
+export default function Home({data}) {
+
   return (
+    
     <div className={styles.container}>
       <Head>
         <title>Create Next App</title>
@@ -13,7 +18,7 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          Welcome to {data?.title}
         </h1>
 
         <p className={styles.description}>
@@ -66,4 +71,40 @@ export default function Home() {
       </footer>
     </div>
   )
+}
+
+export async function getStaticPaths() {
+
+  const routes = await client.fetch(`*[_type == 'route']{slug}`);
+  const paths = routes.map(({ slug }) => ({
+    params: {
+      slug: slug.current === '/' ? false : [slug.current],
+    },
+  }))
+
+  return {
+    paths: paths,
+    fallback: false,
+  }
+}
+export const getStaticProps = async ({ params }) => {
+
+  const slug = slugParamToPath(params?.slug)
+  const request = await client.fetch(
+    // Get the route document with one of the possible slugs for the given requested path
+    groq`
+      *[_type == "route" && slug.current in $possibleSlugs][0]{
+        page-> {...}
+      }
+    `,
+    { possibleSlugs: getSlugVariations(slug) }
+  )
+
+  const data = request?.page
+  console.log(data);
+  return {
+    props:{
+      data
+    }
+  }
 }
