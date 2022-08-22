@@ -11,6 +11,15 @@ export default {
       type: 'string',
       title: 'Title',
     },
+    {
+      name: 'content',
+      type: 'array',
+      title: 'Page sections',
+      of: [
+        { type: 'heading' },
+        { type: 'testSection' },
+      ],
+    },
   ],
 
   preview: {
